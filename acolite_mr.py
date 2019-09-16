@@ -27,7 +27,7 @@ def run_acolite_mr():
     parser = argparse.ArgumentParser(description='ACOLITE MR CLI')
     parser.add_argument('--input', help='Main input bundle containing MS data and metadata')
     parser.add_argument('--output', help='Output directory')
-    parser.add_argument('--ancillary_data', help='Get ancillary data (default=True)', default=True)
+    parser.add_argument('--ancillary_data', help='Get ancillary data (default=False)', default=False)
 
     parser.add_argument('--uoz_default', help='Default ozone value (default=0.3)', default=0.3)
     parser.add_argument('--uwv_default', help='Default water vapour value (default=1.5)', default=1.5)
