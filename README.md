@@ -1,5 +1,5 @@
 ## About ACOLITE_MR
-ACOLITE_MR contains the Dark Spectrum Fitting (DSF) atmospheric correction algorithms for aquatic applications of metre scale satellites developed at RBINS.
+ACOLITE_MR contains the Dark Spectrum Fitting (DSF) atmospheric correction algorithms for aquatic applications of metre scale satellites developed at RBINS. ACOLITE_MR can currently process Pléiades-1 A/B, SPOT 6/7, RapidEye, and PlanetScope imagery.
 
 The algorithm was presented in Vanhellemont and Ruddick 2018, Atmospheric correction of metre-scale optical satellite data for inland and coastal water applications (https://www.sciencedirect.com/science/article/pii/S0034425718303481) and Vanhellemont 2019, Daily metre-scale mapping of water turbidity using CubeSat imagery (https://doi.org/10.1364/OE.27.0A1372).
 
@@ -45,9 +45,7 @@ For example, bundle FCGC600220033 contains three directories (MS, P and LIBRARY)
 To process the full path to the bundle directory has to be specified as input file: /storage/Pleiades/FCGC600220033
 
 ## SPOT input files
-Additionally Rayleigh corrected reflectance (rhorc_\*) will be output for SPOT.
-
-SPOT bundles seem to have an extra level, and the directory containing the SPOT_VOL.XML file has to be provided. E.g. I have a SPOT7 scene, /storage/SPOT/ExampleScene, which contains:
+Additionally Rayleigh corrected reflectance (rhorc_\*) will be output for SPOT. SPOT bundles seem to have an extra level compared to Pléiades, and the directory containing the SPOT_VOL.XML file has to be provided. E.g. I have a SPOT7 scene, /storage/SPOT/ExampleScene, which contains:
 
 /storage/SPOT/ExampleScene/LIBRARY
 
