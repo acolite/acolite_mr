@@ -11,21 +11,19 @@ ACOLITE_MR development was funded by the Belgian Science Policy Office STEREO pr
 ACOLITE_MR is currently only distributed as source code here on GitHub. It is supported on the [ACOLITE forum](https://odnature.naturalsciences.be/remsem/acolite-forum/viewforum.php?f=15). 
 
 ## Dependencies
-ACOLITE is coded in Python 3, and requires the following Python 
-packages to run with all functionality:`to do!`
+ACOLITE is coded in Python 3, and requires the following Python packages to run with all functionality:`to do!`
 
 ## Installation & General use
-* cd into a suitable directory and clone the git repository: `git clone 
-https://github.com/acolite/acolite_mr`
+* cd into a suitable directory and clone the git repository: `git clone https://github.com/acolite/acolite_mr`
 * cd into the new acolite directory `cd acolite_mr`
 * run `python acolite_mr.py --input $in --output $out`
 
-At the least an inputfile $in and output directory $out has to be provided. $out is any path with write access, new directories will be created if necessary. 
+At the least an inputfile $in and output directory $out has to be provided. $out is any path with write access, new directories will be created if necessary. There is only a command line interface.
 
-The processor will output a NetCDF file with top-of-atmosphere reflectance (rhot_*) and surface reflectance (rhos_*) in named using wavelengths derived from the band averaged spectral response function. The NetCDF metadata contains the scene geometry and used atmospheric correction parameters (e.g. aerosol model, optical thickness, and derived path reflectance and transmittances per band.) For water applications the rhos_* data can be used as being rhow_* (rhow=pi*Rrs) although no sun glint correction has been applied.
+The processor will output a NetCDF file with top-of-atmosphere reflectance (rhot_\*) and surface reflectance (rhos_\*) in named using wavelengths derived from the band averaged spectral response function. The NetCDF metadata contains the scene geometry and used atmospheric correction parameters (e.g. aerosol model, optical thickness, and derived path reflectance and transmittances per band.) For water applications the rhos_\* data can be used as being rhow_\* (rhow=pi\*Rrs) although no sun glint correction has been applied.
 
 ## Pléiades
-Additionally Rayleigh corrected reflectance (rhorc_*) will be output for Pléiades. Latitude and longitude are only  approximated from the scene bounding polygon vertex coordinates, and should be used with care. 
+Additionally Rayleigh corrected reflectance (rhorc_\*) will be output for Pléiades. Latitude and longitude are only  approximated from the scene bounding polygon vertex coordinates, and should be used with care. 
 
 For Pléiades $in is the full path to the extracted data obtained from Airbus. This is a bundle directory that typically contains a separate directory with MultiSpectral (MS) and/or Panchromatic (P) data. Some scenes are Pansharpened MultiSpectral (PMS). 
 
@@ -47,7 +45,7 @@ For example, bundle FCGC600220033 contains three directories (MS, P and LIBRARY)
 To process the full path to the bundle directory has to be specified as input file: /storage/Pleiades/FCGC600220033
 
 ## SPOT input files
-Additionally Rayleigh corrected reflectance (rhorc_*) will be output for SPOT.
+Additionally Rayleigh corrected reflectance (rhorc_\*) will be output for SPOT.
 
 SPOT bundles seem to have an extra level, and the directory containing the SPOT_VOL.XML file has to be provided. E.g. I have a SPOT7 scene, /storage/SPOT/ExampleScene, which contains:
 
