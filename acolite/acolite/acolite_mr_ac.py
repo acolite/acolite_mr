@@ -48,7 +48,7 @@ def acolite_mr_ac(bundle,
     if data_type == 'pleiades':
         ac.pleiades.pleiades_ac(bundle, output=output, limit=limit, 
                             ancillary_data=ancillary_data,
-                            luts=luts, 
+                            luts=luts, write_netcdf_geo=False,
                             uoz=uoz,
                             uwv=uwv,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb_rhos,
