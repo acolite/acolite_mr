@@ -11,7 +11,7 @@ ACOLITE_MR development was funded by the Belgian Science Policy Office STEREO pr
 ACOLITE_MR is currently only distributed as source code here on GitHub. It is supported on the [ACOLITE forum](https://odnature.naturalsciences.be/remsem/acolite-forum/viewforum.php?f=15). 
 
 ## Dependencies
-ACOLITE is coded in Python 3, and requires the following Python packages to run with all functionality:`to do!`
+ACOLITE is coded in Python 3, and requires the following Python packages to run with all functionality:`matplotlib scipy numpy requests netcdf4 gdal pillow pyproj statsmodels`
 
 ## Installation & General use
 * cd into a suitable directory and clone the git repository: `git clone https://github.com/acolite/acolite_mr`
