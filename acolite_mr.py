@@ -1,6 +1,7 @@
 ## QV 2019-02-25 runs Pléiades processing 
 ##
 ## last modification QV 2019-09-16 added Planet data processing 
+##                   QV 2020-02-25 added ignore_sr_image keyword
 
 def run_acolite_mr():
     ## import sys to parse arguments
@@ -27,7 +28,7 @@ def run_acolite_mr():
     parser = argparse.ArgumentParser(description='ACOLITE MR CLI')
     parser.add_argument('--input', help='Main input bundle containing MS data and metadata')
     parser.add_argument('--output', help='Output directory')
-    parser.add_argument('--ancillary_data', help='Get ancillary data (default=False)', default=False)
+    parser.add_argument('--ancillary_data', help='Get ancillary data (default=True)', default=True)
 
     parser.add_argument('--uoz_default', help='Default ozone value (default=0.3)', default=0.3)
     parser.add_argument('--uwv_default', help='Default water vapour value (default=1.5)', default=1.5)
@@ -47,6 +48,7 @@ def run_acolite_mr():
     parser.add_argument('--output_rgb', help='Output PNG RGB composite (default=True)', default=True)
     parser.add_argument('--pan_sharpen_rgb', help='Pan sharpen the RGB composite (default=False)', default=False)
 
+    parser.add_argument('--ignore_sr_image', help='Skip the SR file provided by Planet (default=True)', default=True)
     args, unknown = parser.parse_known_args()
 
     if args.input is None:
@@ -88,7 +90,7 @@ def run_acolite_mr():
     ## run the processing
     ac.acolite.acolite_mr_ac(args.input, output=args.output, limit=args.limit,
                             ancillary_data=args.ancillary_data,
-                            luts=luts, 
+                            luts=luts, ignore_sr_image=args.ignore_sr_image,
                             uoz=args.uoz_default,
                             uwv=args.uwv_default,
                             map_rgb=args.output_rgb, map_rgb_rhos=args.output_rgb,

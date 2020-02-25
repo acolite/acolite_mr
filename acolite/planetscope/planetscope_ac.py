@@ -12,6 +12,7 @@
 ##                2019-06-12 (QV) added new model selection
 ##                2019-12-21 (QV) modifications for SuperDove beta data
 ##                2020-01-29 (QV) added extra_ac_parameters output
+##                2020-02-25 (QV) added ignore_sr_image keyword
 
 def planetscope_ac(bundle, output, limit=None,
                    gas_transmittance = True,
@@ -29,6 +30,7 @@ def planetscope_ac(bundle, output, limit=None,
                    rdark_list_selection='intercept',
                    luts=['PONDER-LUT-201704-MOD1-1013mb', 'PONDER-LUT-201704-MOD2-1013mb'],
                    extra_ac_parameters=True,
+                   ignore_sr_image = True,
                    extend_limit=False,
                    keep_l1r_ncdf=False,
                    map_rgb = True,
@@ -189,13 +191,6 @@ def planetscope_ac(bundle, output, limit=None,
 
     ## get NCEP & TOAST ancillary data
     if ancillary_data:
-        #if ('lat' not in locals()) or ('lat' not in locals()):
-            #if data_type == "NetCDF":
-            #    lon = nc_data(bundle, 'lon')
-            #    lat = nc_data(bundle, 'lat')
-            #else:
-            #    lon, lat = planetscope.get_ll(metadata,limit=limit,extend_limit=extend_limit)
-
         ## use image/region mid-point
         pc_lon=lon[int(lon.shape[0]/2), int(lon.shape[1]/2)]
         pc_lat=lat[int(lat.shape[0]/2), int(lat.shape[1]/2)]
@@ -236,15 +231,11 @@ def planetscope_ac(bundle, output, limit=None,
         obase = metadata['obase']
         nc_l1r_new = False
         nc_file_l1r = '{}'.format(bundle)
-        #if ('lat' not in locals()) or ('lat' not in locals()):
-        #    lon = nc_data(bundle, 'lon')
-        #    lat = nc_data(bundle, 'lat')
     else:
         ## add PS satellite id
         if metadata['SENSOR']=='PlanetScope':
             obase = '{}_{}_{}'.format(metadata['SENSOR'], metadata['TIME'].strftime('%Y_%m_%d_%H_%M_%S'), 'PS{}'.format(metadata['SATELLITE_SENSOR'].split('_')[1]))
         else:
-            #obase = '{}_{}'.format(metadata['SATELLITE_SENSOR'], metadata['TIME'].strftime('%Y_%m_%d_%H_%M_%S'))
             obase = '{}_{}_{}'.format(metadata['SENSOR'], metadata['TIME'].strftime('%Y_%m_%d_%H_%M_%S'), 'RE{}'.format(metadata['SATELLITE_SENSOR'].split('-')[1]))
         nc_l1r_new = True
         nc_file_l1r = '{}/{}_L1R.nc'.format(output, obase)
@@ -264,14 +255,6 @@ def planetscope_ac(bundle, output, limit=None,
     rhod = {}
 
     for bi, band in enumerate(bands):
-        #ds_att = {}
-        #for mk in metadata:
-        #    if '{}-'.format(band) not in mk: continue
-        #    bk, bp = mk.split('-')
-        #    ds_att[bp] = metadata[mk]
-        #ds_att['wavelength']=float(metadata['{}-{}'.format(band, 'wave_name')])
-
-        #parname_t = 'rhot_{}'.format(ds_att['wave_name'])
         ds_att = planetscope.get_band_att(metadata, band)
         parname_t = 'rhot_{}'.format(ds_att['wave_name'])
         parname_s = 'rhos_{}'.format(ds_att['wave_name'])
@@ -306,23 +289,10 @@ def planetscope_ac(bundle, output, limit=None,
                            'raa': metadata['AZI'],'vza': metadata['THV'], 'sza': metadata['THS']}
         band_data = None
     print(rhod)	
-    ## select model
-    #(ratm_s,rorayl_s,dtotr_s,utotr_s,dtott_s,utott_s,astot_s, tau550),\
-    #(bands_sorted, tau550_all_bands, dark_idx, sel_rmsd, rdark_sel, pixel_idx), \
-    #(sel_model_lut, sel_model_lut_meta) = ac.select_model(metadata, rdark, luts=luts,
-    #                                                           model_selection=model_selection, 
-    #                                                           rdark_list_selection=rdark_list_selection,
-    #                                                           pressure=pressure)
-    #print(tau550, dark_idx, sel_model_lut_meta['aermod'])
 
-    #print(rhod)
+    ## select model
     res = aco.ac.select_model2(rhod, sensor, pressure = pressure,
                                rhod_tgas_cutoff = 0.90, rhod_model_selection = 'min_tau')
-    #print(res)
-    #print(res.keys())
-    #if extra_ac_parameters: 
-    #    print(res['lut_meta'])
-    #    ac_pars = res['lut_meta']['par']
 
     attributes = metadata
 
@@ -351,9 +321,6 @@ def planetscope_ac(bundle, output, limit=None,
         for b in rhod:
             band_pars[b][par] = aco.shared.rsr_convolute(ret, waves_mu, rsr[b]['response'], rsr[b]['wave'])
 
-    #print(band_pars)
-    #for b in rdark_sel: attributes['{}-rdark'.format(b)] = rdark_sel[b]
-    #for b in ratm_s: attributes['{}-rpath'.format(b)] = ratm_s[b]
 
     for b in res['rhod_sel']: attributes['{}-rdark'.format(b)] = res['rhod_sel'][b]
     for b in band_pars: attributes['{}-rpath'.format(b)] = band_pars[b]['romix']
@@ -366,7 +333,6 @@ def planetscope_ac(bundle, output, limit=None,
     tau550 = res['taua']
     sel_rmsd = res['rmsd']
 
-    #print(attributes['rdark'])
     if 'aermod' in sel_model_lut_meta.keys():
         if sel_model_lut_meta['aermod'][0] == "1": model_char = 'C'
         if sel_model_lut_meta['aermod'][0] == "2": model_char = 'M'
@@ -378,7 +344,6 @@ def planetscope_ac(bundle, output, limit=None,
     pixel_idx = -1
     attributes['dsf_pixel_idx']=pixel_idx
     attributes['dsf_percentile']=0.1
-    #attributes['dsf_bestfit']=bestfit
     attributes['dsf_model_selection']=model_selection
 
     attributes['ac_model']=sel_model_lut_meta['base']#[0]
@@ -396,11 +361,9 @@ def planetscope_ac(bundle, output, limit=None,
     ds_plot = '{}/{}_{}.{}'.format(output,obase, 'dark_spectrum','png')
     band_names = bands
     data_type = 'NetCDF'
-    #waves = [metadata['bands'][b]['wave_name'] for b in bands]
     waves = [metadata['{}-{}'.format(b,'wave_name')] for b in bands]
     dsf_spectrum_option = 'fixed'
 
-    #metadata['SENSOR']='PlanetScope'
     ratm_s = {b:band_pars[b]['romix'] for b in band_pars}
     rorayl_s = {b:band_pars[b]['rorayl'] for b in band_pars}
     plot_dark_spectrum(metadata, ds_plot, waves, ratm_s, rorayl_s, rdark, dark_idx, tau550, sel_model_lut_meta, xlim=(430,900))
@@ -409,28 +372,12 @@ def planetscope_ac(bundle, output, limit=None,
     nc_l2r_new = True
 
     for bi, band in enumerate(bands):
-        #ds_att = {}
-        #for mk in metadata:
-        #    if '{}-'.format(band) not in mk: continue
-        #    bk, bp = mk.split('-')
-        #    ds_att[bp] = metadata[mk]
-        #ds_att['wavelength']=float(metadata['{}-{}'.format(band, 'wave_name')])
-
         ds_att = planetscope.get_band_att(metadata, band)
         parname_t = 'rhot_{}'.format(ds_att['wave_name'])
         parname_s = 'rhos_{}'.format(ds_att['wave_name'])
 
-#        parname_t = 'rhot_{}'.format(metadata['bands'][band]['wave_name'])
-#       parname_s = 'rhos_{}'.format(metadata['bands'][band]['wave_name'])
-
         ## read from L1R NetCDF
         band_data = nc_data(nc_file_l1r,parname_t)
-        #ds_att = metadata['bands'][band]
-        #ds_att['wavelength']=float(metadata['bands'][band]['wave_name'])
-
-        #if ('lat' not in locals()) or ('lat' not in locals()):
-        #
-        #    lon, lat = planetscope.geo.get_ll(metadata,limit=limit,extend_limit=extend_limit)
 
         nc_write(nc_file_l2r, 'lon', lon,
                  new=nc_l2r_new, attributes=attributes, nc_compression=nc_compression)
@@ -460,7 +407,6 @@ def planetscope_ac(bundle, output, limit=None,
         for k in band_pars[band]: ds_att[k] = band_pars[band][k]
 
         ## compute rhos
-        #band_data = rtoa_to_rhos(band_data, ratm_s[band], utott_s[band], dtott_s[band], astot_s[band], tt_gas = 1.)
         band_data = rtoa_to_rhos(band_data, ds_att['romix'], ds_att['utott'], ds_att['dtott'], ds_att['astot'], tt_gas = 1.)
         nc_write(nc_file_l2r, parname_s, band_data,
                             dataset_attributes=ds_att,
@@ -468,9 +414,6 @@ def planetscope_ac(bundle, output, limit=None,
         nc_l2r_new=False
 
     ## make RGB
-    #wave_red = metadata['bands']['Red']['wave_name']
-    #wave_green = metadata['bands']['Green']['wave_name']
-    #wave_blue = metadata['bands']['Blue']['wave_name']
     if metadata['LUT_SENSOR'] ==  "PlanetScope_SuperDove":
         wave_red = metadata['Red-wave_name']
         wave_green = metadata['Green_ii-wave_name']
@@ -505,20 +448,18 @@ def planetscope_ac(bundle, output, limit=None,
                         
                         
     ## get PlanetScope surface reflectance
-    if sr_image_file is not None:
+    if (sr_image_file is not None) & (not ignore_sr_image):
         nc_file_sr = '{}/{}_SR.nc'.format(output, obase)
 
         nc_sr_new = True
         attributes['auto_grouping'] = 'rhot:rhorc:rhos:rhow:sr'
 
         for bi, band in enumerate(bands):
-            parname_sr = 'sr_{}'.format(metadata['bands'][band]['wave_name'])
-            parname_s = 'rhos_{}'.format(metadata['bands'][band]['wave_name'])
+            ds_att = planetscope.get_band_att(metadata, band)
+            parname_sr = 'sr_{}'.format(ds_att['wave_name'])
+            parname_s = 'rhos_{}'.format(ds_att['wave_name'])
 
             band_data = planetscope.get_rsur(sr_image_file, bi+1, sub=sub)
-
-            ds_att = metadata['bands'][band]
-            ds_att['wavelength']=float(metadata['bands'][band]['wave_name'])
 
             nc_write(nc_file_sr, parname_sr, band_data, 
                                   dataset_attributes=ds_att, 

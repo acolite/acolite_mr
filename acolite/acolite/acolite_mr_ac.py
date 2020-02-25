@@ -3,6 +3,7 @@
 ## written by Quinten Vanhellemont, RBINS for the PONDER project
 ## Sep 2019
 ## modifications: QV 2019-09-16 initial version
+##                2020-02-25 (QV) added ignore_sr_image keyword
 
 def acolite_mr_ac(bundle, 
                   output=None, limit=None,
@@ -10,6 +11,7 @@ def acolite_mr_ac(bundle,
                   luts=['PONDER-LUT-201704-MOD1-1013mb', 'PONDER-LUT-201704-MOD2-1013mb'], 
                   uoz=0.3,
                   uwv=1.5,
+                  ignore_sr_image = True,
                   map_rgb=True, map_rgb_rhos=True,
                   pan_sharpen_rgb=False,
                   sky_correction=True,
@@ -31,7 +33,8 @@ def acolite_mr_ac(bundle,
                     data_type = str(dt)
                 if dt == 'planet':
                     tmp = ac.planetscope.bundle_test(bundle)
-                    data_type = str(dt)
+                    if len(tmp) > 0:
+                        data_type = str(dt)
             except:
                 pass
         else: continue
@@ -48,7 +51,7 @@ def acolite_mr_ac(bundle,
     if data_type == 'pleiades':
         ac.pleiades.pleiades_ac(bundle, output=output, limit=limit, 
                             ancillary_data=ancillary_data,
-                            luts=luts, write_netcdf_geo=False,
+                            luts=luts, 
                             uoz=uoz,
                             uwv=uwv,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb_rhos,
@@ -66,7 +69,7 @@ def acolite_mr_ac(bundle,
                             ancillary_data=ancillary_data,
                             luts=luts, 
                             uoz_default=uoz,
-                            uwv_default=uwv,
+                            uwv_default=uwv, ignore_sr_image=ignore_sr_image,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb,
                             sky_correction=sky_correction)
         return()
