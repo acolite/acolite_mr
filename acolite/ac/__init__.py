@@ -13,8 +13,10 @@ from .select_model2 import select_model2
 from .wvlut_get import wvlut_get
 from .wvlut_interp import wvlut_interp
 
-#from .o2lut_get import o2lut_get
-#from .o2lut_interp import o2lut_interp
+from .o2lut_get import o2lut_get
+from .o2lut_interp import o2lut_interp
+
+from .gas_transmittance import gas_transmittance
 
 from . import ancillary
 from .rayleigh import *

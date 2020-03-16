@@ -3,6 +3,7 @@
 ## written by Quinten Vanhellemont, RBINS for the PONDER project
 ## 2017-01-27
 ## modifications: QV 2019-05-06
+##                2020-03-16 (QV) fixed tile metadata reads
 
 def parse_metadata(metafile):
     from acolite.shared import rsr_read, f0_band, rsr_convolute
@@ -10,20 +11,20 @@ def parse_metadata(metafile):
 
     import os, sys, fnmatch, dateutil.parser
     from xml.dom import minidom
-    
+
     if not os.path.isfile(metafile):
         print('Metadata file not found.')
         sys.exit()
 
-    try: 
+    try:
         xmldoc = minidom.parse(metafile)
-    except: 
+    except:
         print('Error opening metadata file.')
         sys.exit()
-    
+
     metadata = {}
-    
     metadata['SATELLITE'] = 'WorldView2'
+    metadata['SENSOR'] = 'WorldView2'
 
     ## get image information
     metadata_tags = ['NUMROWS','NUMCOLUMNS','PRODUCTLEVEL'
@@ -36,8 +37,6 @@ def parse_metadata(metafile):
                     "MINSATEL","MAXSATEL","MEANSATEL",
                     "EARLIESTACQTIME","LATESTACQTIME"]
 
-                    
-
     for tag in metadata_tags:
         node = xmldoc.getElementsByTagName(tag)
         if len(node) > 0: metadata[tag] = node[0].firstChild.nodeValue
@@ -48,7 +47,7 @@ def parse_metadata(metafile):
     metadata["THV"] = 90.-float(metadata['MEANSATEL'])
     metadata["AZI"] = abs(float(metadata['MEANSATAZ'])-float(metadata['MEANSUNAZ']))
     if metadata["AZI"] > 180.: metadata["AZI"]-=180.
-    
+
     band_names=['COASTAL','BLUE','GREEN','YELLOW','RED','REDEDGE','NIR1','NIR2']
     band_indices=[1,2,3,4,5,6,7,8]
     band_tag_names = ["BAND_C","BAND_B","BAND_G","BAND_Y","BAND_R","BAND_RE","BAND_N", "BAND_N2"]
@@ -63,7 +62,7 @@ def parse_metadata(metafile):
     pp_path = ac.config['pp_data_dir']
     rsr_file = pp_path+'/RSR/'+sensor+'.txt'
     rsr, rsr_bands = rsr_read(file=rsr_file)
-        
+
     ## read band information of spatial extent
     band_values={}
     for b,band_tag in enumerate(band_tag_names):
@@ -83,12 +82,12 @@ def parse_metadata(metafile):
             band_values[band_tag]=band_data
 
     metadata['BAND_INFO'] = band_values
-    
-    
+
+
     ## get tile information
     tile_tags = ["FILENAME",
                 "ULCOLOFFSET","ULROWOFFSET","URCOLOFFSET","URROWOFFSET",
-                "LRCOLOFFSET","LRROWOFFSET","LLCOLOFFSET","LLROWOFFSET"
+                "LRCOLOFFSET","LRROWOFFSET","LLCOLOFFSET","LLROWOFFSET",
                 "ULLON","ULLAT","URLON","URLAT",
                 "LRLON","LRLAT","LLLON","LLLAT",
                 "ULX","ULY","URX","URY",
@@ -104,5 +103,5 @@ def parse_metadata(metafile):
                     tile[tag]=val
         tile_values.append(tile)
     metadata['TILE_INFO'] = tile_values
-    
+
     return metadata

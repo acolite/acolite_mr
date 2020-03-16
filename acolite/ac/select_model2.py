@@ -4,6 +4,7 @@
 ## QV 2019-04-29
 ## modifications: QV 2019-04-30 changed rhod to dict with raa, vza, sza, wave and tt_gas per band
 ##                QV 2019-06-12 added rhod_model_selection min_tau
+##                QV 2020-03-10 added support for new lut dict that has rgi included with pressure
 
 def select_model2(rhod, sensor,
                   pressure = None, 
@@ -12,7 +13,7 @@ def select_model2(rhod, sensor,
                   rhod_model_selection = 'min_drmsd', 
                   rhod_tgas_cutoff = 0.95, rhod_min_wave = 400.,
                   lowess_frac = 0.5, 
-                  luts = ['PONDER-LUT-201704-MOD1-1013mb', 'PONDER-LUT-201704-MOD2-1013mb'], 
+                  luts=None, 
                   lutd=None):
     
     import numpy as np
@@ -22,7 +23,9 @@ def select_model2(rhod, sensor,
     
     ## read luts
     lutdir= '{}/LUT/'.format(ac.config['pp_data_dir'])
-    if lutd is None: lutd=ac.aerlut.get_lutd()
+    #if lutd is None: lutd=ac.aerlut.get_lutd()
+    if lutd is None: lutd=ac.aerlut.import_luts()
+    if luts is None: luts = list(lutd.keys())
     
     ## get sensor RSR
     pp_path = ac.config['pp_data_dir']
@@ -51,21 +54,33 @@ def select_model2(rhod, sensor,
     ## run through luts
     model_results = {}
     for lutid in luts: 
-        if pressure is not None: ## interpolate LUTs to given pressure
-            lut_data, lut_meta = ac.aerlut.aerlut_pressure_hyper(lutid, lutdir, pressure, lut_data_dict=lutd)
-            lutidp = lutid.replace('1013', str(pressure))
-            lutd[lutidp] = {'lut':lut_data, 'meta':lut_meta}
+        inc_pressure=False
+        if 'rgi' in lutd[lutid].keys():
+            inc_pressure=True
+            if pressure is None:
+                press = 1013
+            else:
+                press = 1.*pressure
+                
+            lut_dim = lutd[lutid]['dim']
+            lut_meta = lutd[lutid]['meta']
+            rgi = lutd[lutid]['rgi']
         else:
-            lut_data, lut_meta = lutd[lutid]['lut'], lutd[lutid]['meta']
+            if pressure is not None: ## interpolate LUTs to given pressure
+                lut_data, lut_meta = ac.aerlut.aerlut_pressure_hyper(lutid, lutdir, pressure, lut_data_dict=lutd)
+                lutidp = lutid.replace('1013', str(pressure))
+                lutd[lutidp] = {'lut':lut_data, 'meta':lut_meta}
+            else:
+                lut_data, lut_meta = lutd[lutid]['lut'], lutd[lutid]['meta']
+                
+            ## set up LUT dimensions for interpolation
+            # lut data is par, wave, azi, thv, ths, wind, tau
+            lut_dim = [[i for i in range(len(lut_meta['par']))]]
+            lut_dim += [lut_meta[k] for k in ['wave', 'azi', 'thv', 'ths', 'tau']]
 
-        ## set up LUT dimensions for interpolation
-        # lut data is par, wave, azi, thv, ths, wind, tau
-        lut_dim = [[i for i in range(len(lut_meta['par']))]]
-        lut_dim += [lut_meta[k] for k in ['wave', 'azi', 'thv', 'ths', 'tau']]
-
-        ## set up LUT interpolation
-        rgi = scipy.interpolate.RegularGridInterpolator(lut_dim, lut_data[:,:,:,:,:,0,:], 
-                                                      bounds_error=False, fill_value=np.nan)
+            ## set up LUT interpolation
+            rgi = scipy.interpolate.RegularGridInterpolator(lut_dim, lut_data[:,:,:,:,:,0,:], 
+                                                          bounds_error=False, fill_value=np.nan)
 
         taua_steps = lut_meta['tau']
         waves_mu = lut_meta['wave']
@@ -76,7 +91,10 @@ def select_model2(rhod, sensor,
         for ta in taua_steps:
             #ret = rgi((ip, waves_mu, raa, vza, sza, ta))
             for b in rhod:
-                ret = rgi((ip, waves_mu, rhod[b]['raa'],rhod[b]['vza'], rhod[b]['sza'], ta))
+                if inc_pressure:
+                    ret = rgi((press, ip, waves_mu, rhod[b]['raa'],rhod[b]['vza'], rhod[b]['sza'], ta))
+                else:
+                    ret = rgi((ip, waves_mu, rhod[b]['raa'],rhod[b]['vza'], rhod[b]['sza'], ta))
                 bv = ac.shared.rsr_convolute(ret, waves_mu, rsr[b]['response'], rsr[b]['wave'])
                 ratm_bands[b].append(bv)
 
@@ -125,10 +143,14 @@ def select_model2(rhod, sensor,
         #tmp = rgi((ip, waves_mu, raa, vza, sza, taua_sel))
         #ratm_sel = [ac.shared.rsr_convolute(tmp, waves_mu, rsr[b]['response'], rsr[b]['wave']) for b in rhod]
         ratm_sel = []
+        sel_idx2=-1
         for b in rhod:
-            tmp  = rgi((ip, waves_mu, rhod[b]['raa'],rhod[b]['vza'], rhod[b]['sza'], taua_sel)) 
+            if inc_pressure:
+                tmp = rgi((press, ip, waves_mu, rhod[b]['raa'],rhod[b]['vza'], rhod[b]['sza'], taua_sel))
+            else:
+                tmp  = rgi((ip, waves_mu, rhod[b]['raa'],rhod[b]['vza'], rhod[b]['sza'], taua_sel)) 
             ratm_sel.append(ac.shared.rsr_convolute(tmp, waves_mu, rsr[b]['response'], rsr[b]['wave']))
-            
+        
         if rhod_fit_bands == 2:
             ## find best fit for two bands
             if rhod_fit_selection == 'min_tau':
@@ -156,9 +178,10 @@ def select_model2(rhod, sensor,
         ## store fit
         model_results[lutid] = {'taua': taua_sel, 'rmsd':sel_rmsd, 
                                 'sel_idx': sel_idx, 'sel_idx2': sel_idx2, 
-                                'pressure':pressure, 'lutid':lutid if pressure is None else lutidp,
+                                'pressure':pressure, 'lutid':lutid if (pressure is None) | (inc_pressure) else lutidp,
                                 'rhod_fit_bands':rhod_fit_bands, 'rhod_fit_selection':rhod_fit_selection,
                                 'lut_dim':lut_dim, 'rgi':rgi, 'lut_meta':lut_meta, 'ratm_sel':ratm_sel}
+        
         print(lutid, taua_sel, sel_rmsd, sel_idx, sel_idx2)
         
     ## choose model

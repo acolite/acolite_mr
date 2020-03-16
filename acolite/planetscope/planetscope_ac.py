@@ -28,7 +28,7 @@ def planetscope_ac(bundle, output, limit=None,
                    pressure = None,
                    model_selection='min_tau',
                    rdark_list_selection='intercept',
-                   luts=['PONDER-LUT-201704-MOD1-1013mb', 'PONDER-LUT-201704-MOD2-1013mb'],
+                   luts=['PONDER-LUT-201704-MOD1', 'PONDER-LUT-201704-MOD2'],
                    extra_ac_parameters=True,
                    ignore_sr_image = True,
                    extend_limit=False,
@@ -52,6 +52,7 @@ def planetscope_ac(bundle, output, limit=None,
     from acolite import planetscope, ac
 
     import acolite as aco
+    import matplotlib as mpl
 
     data_type=None
     sub = None
@@ -291,7 +292,8 @@ def planetscope_ac(bundle, output, limit=None,
     print(rhod)	
 
     ## select model
-    res = aco.ac.select_model2(rhod, sensor, pressure = pressure,
+    lutd = aco.aerlut.import_luts(base_luts=luts)
+    res = aco.ac.select_model2(rhod, sensor, pressure = pressure, lutd=lutd,
                                rhod_tgas_cutoff = 0.90, rhod_model_selection = 'min_tau')
 
     attributes = metadata
@@ -316,7 +318,7 @@ def planetscope_ac(bundle, output, limit=None,
         ip = [i for i,value in enumerate(res['lut_meta']['par']) if value == par]
         if len(ip) == 1: ip = ip[0]
         else: continue
-        ret = res['rgi']((ip, waves_mu, raa, vza, sza, res['taua']))
+        ret = res['rgi']((pressure, ip, waves_mu, raa, vza, sza, res['taua']))
 
         for b in rhod:
             band_pars[b][par] = aco.shared.rsr_convolute(ret, waves_mu, rsr[b]['response'], rsr[b]['wave'])
@@ -334,9 +336,12 @@ def planetscope_ac(bundle, output, limit=None,
     sel_rmsd = res['rmsd']
 
     if 'aermod' in sel_model_lut_meta.keys():
-        if sel_model_lut_meta['aermod'][0] == "1": model_char = 'C'
-        if sel_model_lut_meta['aermod'][0] == "2": model_char = 'M'
-        if sel_model_lut_meta['aermod'][0] == "3": model_char = 'U'
+        sel_mod_num = sel_model_lut_meta['aermod']
+        if type(sel_mod_num) is list: sel_mod_num = sel_mod_num[0]
+        sel_model_lut_meta['aermod'] = str(sel_mod_num)
+        if sel_model_lut_meta['aermod'] == "1": model_char = 'C'
+        if sel_model_lut_meta['aermod'] == "2": model_char = 'M'
+        if sel_model_lut_meta['aermod'] == "3": model_char = 'U'
     else:
         model_char = '4C'
         model_char = '4C: {}/{}/{}/{}'.format(sel_model_lut_meta['mod1'],sel_model_lut_meta['mod2'],sel_model_lut_meta['mod3'],sel_model_lut_meta['mod4'])
@@ -485,5 +490,8 @@ def planetscope_ac(bundle, output, limit=None,
 
     if (not keep_l1r_ncdf) & (not data_type == "NetCDF"):
          shutil.rmtree(nc_file_l1r)
+
+    lutd = None
+    mpl.pyplot.close('all')
 
     return(nc_file_l2r)

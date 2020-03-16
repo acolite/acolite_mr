@@ -1,6 +1,6 @@
-## QV 2019-02-25 runs Pléiades processing 
+## QV 2019-02-25 runs Pléiades processing
 ##
-## last modification QV 2019-09-16 added Planet data processing 
+## last modification QV 2019-09-16 added Planet data processing
 ##                   QV 2020-02-25 added ignore_sr_image keyword
 
 def run_acolite_mr():
@@ -22,7 +22,7 @@ def run_acolite_mr():
 
     ## ignore numpy errors
     import numpy as np
-    olderr = np.seterr(all='ignore') 
+    olderr = np.seterr(all='ignore')
 
     import argparse
     parser = argparse.ArgumentParser(description='ACOLITE MR CLI')
@@ -81,7 +81,7 @@ def run_acolite_mr():
     luts_all=['PONDER-LUT-201704-MOD1-1013mb', 'PONDER-LUT-201704-MOD2-1013mb', 'PONDER-LUT-201704-MOD3-1013mb']
     if type(args.aer_models) is str:
         args.aer_models = [int(a) for a in args.aer_models.split(',')]
-    luts = [luts_all[a-1] for a in args.aer_models] 
+    luts = [luts_all[a-1] for a in args.aer_models]
 
     fixed_lut = luts_all[1]
     if type(args.fixed_model) == str:
@@ -96,7 +96,7 @@ def run_acolite_mr():
                             map_rgb=args.output_rgb, map_rgb_rhos=args.output_rgb,
                             pan_sharpen_rgb=args.pan_sharpen_rgb,
                             sky_correction=args.sky_correction,
-                            dem_pressure=args.dem_pressure, 
+                            dem_pressure=args.dem_pressure,
                             force_band=args.force_band,
                             fixed_aot550=args.fixed_aot, fixed_lut=fixed_lut,
                             dark_spectrum_full_scene=args.dark_spectrum_full_scene)
