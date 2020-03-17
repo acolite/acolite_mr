@@ -1,5 +1,5 @@
 ## About ACOLITE_MR
-ACOLITE_MR contains the Dark Spectrum Fitting (DSF) atmospheric correction algorithms for aquatic applications of metre scale satellites developed at RBINS. ACOLITE_MR can currently process Pléiades-1 A/B, SPOT 6/7, RapidEye, and PlanetScope imagery.
+ACOLITE_MR contains the Dark Spectrum Fitting (DSF) atmospheric correction algorithms for aquatic applications of metre scale satellites developed at RBINS. ACOLITE_MR can currently process Pléiades-1 A/B, SPOT 6/7, RapidEye, PlanetScope, and WorldView-2 imagery.
 
 The algorithm was presented in Vanhellemont and Ruddick 2018, [Atmospheric correction of metre-scale optical satellite data for inland and coastal water applications](https://www.sciencedirect.com/science/article/pii/S0034425718303481) and Vanhellemont 2019, [Daily metre-scale mapping of water turbidity using CubeSat imagery](https://doi.org/10.1364/OE.27.0A1372).
 
@@ -11,7 +11,7 @@ ACOLITE_MR development was funded by the Belgian Science Policy Office STEREO pr
 ACOLITE_MR is currently only distributed as source code here on GitHub. It is supported on the [ACOLITE forum](https://odnature.naturalsciences.be/remsem/acolite-forum/viewforum.php?f=15). 
 
 ## Dependencies
-ACOLITE is coded in Python 3, and requires the following Python packages to run with all functionality:`matplotlib scipy numpy requests netcdf4 gdal pillow pyproj statsmodels`
+ACOLITE is coded in Python 3, and requires the following Python packages to run with all functionality:`matplotlib scipy numpy requests netcdf4 gdal pillow pyproj statsmodels pyhdf`
 
 ## Installation & General use
 * cd into a suitable directory and clone the git repository: `git clone https://github.com/acolite/acolite_mr`
@@ -85,3 +85,6 @@ This level contains the SPOT_VOL.XML file and hence has to be passed as input fi
 
 ## PlanetScope/RapidEye input files
 For Planet data, "analytic" data in PSScene4Band and REOrthoTile are supported. The directory containing the _AnalyticMS.tif and AnalyticMS_metadata.xml should be passed as $in.
+
+## WorldView-2 input files
+For WV-2 data, "L2A" bundles in GeoTIFF format are supported. The directory containing the subtile .tif files and .xml metadata should be passed as $in.
