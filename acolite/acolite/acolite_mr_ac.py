@@ -72,9 +72,13 @@ def acolite_mr_ac(bundle,
 
     ## PlanetScope/RapidEye
     if data_type == 'planet':
+        luts_ = []
+        for l in luts:
+            luts_.append('-'.join(l.split('-')[0:-1]))
+
         ac.planetscope.planetscope_ac(bundle, output=output, limit=limit,
                             ancillary_data=ancillary_data,
-                            luts=luts,
+                            luts=luts_,
                             uoz_default=uoz,
                             uwv_default=uwv, ignore_sr_image=ignore_sr_image,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb,
