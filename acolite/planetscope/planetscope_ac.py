@@ -13,6 +13,7 @@
 ##                2019-12-21 (QV) modifications for SuperDove beta data
 ##                2020-01-29 (QV) added extra_ac_parameters output
 ##                2020-02-25 (QV) added ignore_sr_image keyword
+##                2020-03-31 (QV) fixed issue with pressure = None
 
 def planetscope_ac(bundle, output, limit=None,
                    gas_transmittance = True,
@@ -205,6 +206,9 @@ def planetscope_ac(bundle, output, limit=None,
                 print('No ancillary pressure found: using default.')
                 pressure=None
             else: pressure = pc_anc['press']['interp']
+
+    if pressure is None:
+        pressure = 1013.25
 
     ## get gas transmittances
     if gas_transmittance:
