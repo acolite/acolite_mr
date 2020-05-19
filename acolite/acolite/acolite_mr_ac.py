@@ -5,6 +5,7 @@
 ## modifications: QV 2019-09-16 initial version
 ##                2020-02-25 (QV) added ignore_sr_image keyword
 ##                2020-03-16 (QV) added worldview
+##                2020-05-19 (QV) added elevation/pressure option
 
 def acolite_mr_ac(bundle,
                   output=None, limit=None,
@@ -16,7 +17,7 @@ def acolite_mr_ac(bundle,
                   map_rgb=True, map_rgb_rhos=True,
                   pan_sharpen_rgb=False,
                   sky_correction=True,
-                  dem_pressure=False,
+                  dem_pressure=False, elevation=None, pressure=None,
                   force_band=None,
                   fixed_aot550=None, fixed_lut=None,
                   dark_spectrum_full_scene=True):
@@ -53,6 +54,11 @@ def acolite_mr_ac(bundle,
     else:
         print('Processing {} file'.format(data_type))
 
+    ## compute pressure from elevation if given
+    if (pressure is None) & (elevation is not None):
+        elevation = float(elevation)
+        pressure = ac.ac.pressure_elevation(elevation)
+        print('Computed {:.2f} hPa pressure for {:.2f} m elevation'.format(pressure, elevation))
 
     ## Pléiades/SPOT
     if data_type == 'pleiades':
@@ -64,7 +70,7 @@ def acolite_mr_ac(bundle,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb_rhos,
                             pan_sharpen_rgb=pan_sharpen_rgb,
                             sky_correction=sky_correction,
-                            dem_pressure=dem_pressure,
+                            dem_pressure=dem_pressure, pressure=pressure,
                             force_band=force_band,
                             fixed_aot550=fixed_aot550, fixed_lut=fixed_lut,
                             dark_spectrum_full_scene=dark_spectrum_full_scene)
@@ -72,13 +78,9 @@ def acolite_mr_ac(bundle,
 
     ## PlanetScope/RapidEye
     if data_type == 'planet':
-        luts_ = []
-        for l in luts:
-            luts_.append('-'.join(l.split('-')[0:-1]))
-
         ac.planetscope.planetscope_ac(bundle, output=output, limit=limit,
                             ancillary_data=ancillary_data,
-                            luts=luts_,
+                            luts=luts, pressure=pressure,
                             uoz_default=uoz,
                             uwv_default=uwv, ignore_sr_image=ignore_sr_image,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb,
@@ -95,7 +97,7 @@ def acolite_mr_ac(bundle,
 
         ac.worldview.worldview_ac(bundle, output=output, limit=limit,
                             ancillary_data=ancillary_data,
-                            luts=luts_,
+                            luts=luts_, pressure=pressure,
                             uoz_default=uoz, uwv_default=uwv,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb,
                             sky_correction=sky_correction)

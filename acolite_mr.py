@@ -2,6 +2,7 @@
 ##
 ## last modification QV 2019-09-16 added Planet data processing
 ##                   QV 2020-02-25 added ignore_sr_image keyword
+##                   QV 2020-05-19 added pressure and elevation arguments
 
 def run_acolite_mr():
     ## import sys to parse arguments
@@ -49,6 +50,10 @@ def run_acolite_mr():
     parser.add_argument('--pan_sharpen_rgb', help='Pan sharpen the RGB composite (default=False)', default=False)
 
     parser.add_argument('--ignore_sr_image', help='Skip the SR file provided by Planet (default=True)', default=True)
+
+    parser.add_argument('--elevation', help='Scene elevation in meter (default=None)', default=None)
+    parser.add_argument('--pressure', help='Scene pressure in hPa (default=None)', default=None)
+
     args, unknown = parser.parse_known_args()
 
     if args.input is None:
@@ -97,6 +102,8 @@ def run_acolite_mr():
                             pan_sharpen_rgb=args.pan_sharpen_rgb,
                             sky_correction=args.sky_correction,
                             dem_pressure=args.dem_pressure,
+                            pressure = args.pressure,
+                            elevation = args.elevation,
                             force_band=args.force_band,
                             fixed_aot550=args.fixed_aot, fixed_lut=fixed_lut,
                             dark_spectrum_full_scene=args.dark_spectrum_full_scene)
