@@ -35,17 +35,17 @@ def get_sensor_lut(sensor, rsr_file, override=0, lutdir=None, lutid='PONDER-LUT-
         ## set up wavelength space
         wave_range=[0.2,2.4]
         wave_step=0.001
-        wave_hyper = linspace(wave_range[0],wave_range[1],((wave_range[1]-wave_range[0])/wave_step)+2)
+        wave_hyper = linspace(wave_range[0],wave_range[1],int((wave_range[1]-wave_range[0])/wave_step)+2)
 
         ## interpolate RSR to same dimensions
         rsr_hyper = dict()
-        for band in rsr: 
+        for band in rsr:
             band_wave_hyper = wave_hyper
             band_response_hyper = interp(wave_hyper, rsr[band]['wave'], rsr[band]['response'], left=0, right=0)
             band_response_sum = sum(band_response_hyper)
             rsr_hyper[band]={'wave':band_wave_hyper, 'response': band_response_hyper, 'sum':band_response_sum}
 
-        ## interpolate lut to hyperspectral, and convolute to sensor bands        
+        ## interpolate lut to hyperspectral, and convolute to sensor bands
         ### set up empty sensor LUT
         lut_sensor = dict()
         for band in rsr: lut_sensor[band]=zeros([len(meta['par']),len(meta['azi']),len(meta['thv']),len(meta['ths']), 1, len(meta['tau'])])
@@ -63,7 +63,7 @@ def get_sensor_lut(sensor, rsr_file, override=0, lutdir=None, lutid='PONDER-LUT-
                         #for i4, v4 in enumerate(meta['wnd']):
                             for i5, v5 in enumerate(meta['tau']):
                                 data_hyper = interp(wave_hyper, data_wave, lut[i0,:,i1,i2,i3,i4,i5], left=0, right=0)
-                                for band in rsr: 
+                                for band in rsr:
                                     lut_sensor[band][i0,i1,i2,i3,i4,i5] = (sum(data_hyper*rsr_hyper[band]['response'])/rsr_hyper[band]['sum'])
 
         ## write nc file
@@ -72,10 +72,10 @@ def get_sensor_lut(sensor, rsr_file, override=0, lutdir=None, lutid='PONDER-LUT-
                 from netCDF4 import Dataset
                 nc = Dataset(lutnc, 'w', format='NETCDF4_CLASSIC')
                 ## write metadata
-                for i in meta: 
+                for i in meta:
                     attdata=meta[i]
                     if isinstance(attdata,list):
-                        if isinstance(attdata[0],str): 
+                        if isinstance(attdata[0],str):
                             attdata=','.join(attdata)
                     setattr(nc, i, attdata)
                 ## set up LUT dimension
@@ -97,9 +97,9 @@ def get_sensor_lut(sensor, rsr_file, override=0, lutdir=None, lutid='PONDER-LUT-
             if os.path.isfile(lutnc): os.remove(lutnc)
             print(sys.exc_info()[0])
             print('Failed to write LUT data to NetCDF (id='+lutid+')')
-  
+
     ## read dataset from NetCDF
-    if (os.path.isfile(lutnc) == 1): 
+    if (os.path.isfile(lutnc) == 1):
         try:
             if os.path.isfile(lutnc):
                 from netCDF4 import Dataset
@@ -113,7 +113,7 @@ def get_sensor_lut(sensor, rsr_file, override=0, lutdir=None, lutid='PONDER-LUT-
                 ## read in LUT
                 lut_sensor = dict()
                 datasets = list(nc.variables.keys())
-                for dataset in datasets: 
+                for dataset in datasets:
                     lut_sensor[dataset] = nc.variables[dataset][:]
                 nc.close()
         except:
