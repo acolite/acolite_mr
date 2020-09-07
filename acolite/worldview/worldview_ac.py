@@ -3,8 +3,11 @@
 ## QV 2020-03-14
 ## modifications: QV 2020-03-16 converted to function, added ancillary data, sky correction
 ##                              added full tile geolocation
+##                QV 2020-07-26 added WV3 and swir bundle
 
-def worldview_ac(bundle, output=None, limit=None,
+def worldview_ac(bundle,
+                 swir_bundle=None,
+                 output=None, limit=None,
                             ancillary_data=False,
                             luts=['PONDER-LUT-201704-MOD1', 'PONDER-LUT-201704-MOD2'],
                             uoz_default=0.3, uwv_default=1.5, pressure = None,
@@ -24,6 +27,16 @@ def worldview_ac(bundle, output=None, limit=None,
     else:
         print('No metadata found for {}'.format(bundle))
         return()
+
+    ## parse the metadata
+    if swir_bundle is not None:
+        swir_metafile = glob.glob('{}/{}'.format(swir_bundle,'*.XML'))
+        if len(swir_metafile)>0:
+            swir_metafile = swir_metafile[0]
+            swir_metadata = ac.worldview.parse_metadata(swir_metafile)
+        else:
+            print('No metadata found for {}'.format(swir_bundle))
+            return()
 
     print('{} - Started processing {}'.format(datetime.datetime.now().isoformat()[0:19], bundle))
 
@@ -56,12 +69,25 @@ def worldview_ac(bundle, output=None, limit=None,
     rsr, rsr_bands = ac.shared.rsr_read(file=rsr_file)
 
     ## get band wavelengths
-    band_tags=["BAND_C","BAND_B","BAND_G","BAND_Y","BAND_R","BAND_RE","BAND_N", "BAND_N2"]
-    band_names = [b for ib, b in enumerate(rsr_bands) if b != 'PAN']
-    band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if b != 'PAN']
+    #band_tags=["BAND_C","BAND_B","BAND_G","BAND_Y","BAND_R","BAND_RE","BAND_N", "BAND_N2"]
+    #band_names = [b for ib, b in enumerate(rsr_bands) if b != 'PAN']
+    #band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if b != 'PAN']
+
+
+    band_tags = list(metadata['BAND_INFO'].keys())
+    if swir_bundle is None:
+        band_names = [b for ib, b in enumerate(rsr_bands) if (b != 'PAN') & ('SWIR' not in b)]
+        band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if (b != 'PAN') & ('SWIR' not in b)]
+    else:
+        band_names = [b for ib, b in enumerate(rsr_bands) if (b != 'PAN')]
+        band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if (b != 'PAN')]
+
+    print(band_names)
+    print(band_indices)
+
     wave_range=[0.2,2.4]
     wave_step=0.001
-    wave_hyper = np.linspace(wave_range[0],wave_range[1],((wave_range[1]-wave_range[0])/wave_step)+2)
+    wave_hyper = np.linspace(wave_range[0],wave_range[1],int(((wave_range[1]-wave_range[0])/wave_step)+2))
     waved = ac.shared.rsr_convolute_dict(wave_hyper, wave_hyper, rsr)
     wavelengths = [waved[b]*1000 for b in band_names]
     band_wavelengths = ['{0:.0f}'.format(i) for i in wavelengths]
@@ -125,7 +151,7 @@ def worldview_ac(bundle, output=None, limit=None,
     ## get dimensions and dark spectrum from each tile
     tiles_dims = {}
     rhod={}
-    for tile in tiles:
+    for ti, tile in enumerate(tiles):
         for tile_mdata in metadata['TILE_INFO']:
             if tile in tile_mdata['FILENAME']:
                 file = '{}/{}'.format(bundle,tile_mdata['FILENAME'])
@@ -133,9 +159,20 @@ def worldview_ac(bundle, output=None, limit=None,
                     tiles_dims[tile] = (0,0)
                     continue
 
+                ##
+                if swir_bundle is not None:
+                    swir_file = '{}/{}'.format(swir_bundle,swir_metadata['TILE_INFO'][ti])
+                    if not os.path.exists(swir_file):
+                        continue
+
                 for b,band in enumerate(band_names):
-                    d=ac.worldview.get_rtoa(file, band_indices[b], band_tags[b], metadata,
-                                            sun_zenith=sza, se_distance=se_distance)
+                    if 'SWIR' not in band:
+                        d=ac.worldview.get_rtoa(file, band_indices[b], band_tags[b], metadata,
+                                                sun_zenith=sza, se_distance=se_distance)
+                    else:
+                        d=ac.worldview.get_rtoa(swir_file, band_indices[b], band_tags[b], swir_metadata,
+                                                sun_zenith=sza, se_distance=se_distance)
+                        print(band, d.shape)
                     if tile not in tiles_dims: tiles_dims[tile] = d.shape
 
                     npix=1000
@@ -157,6 +194,7 @@ def worldview_ac(bundle, output=None, limit=None,
                     else:
                         rhod[band_names[b]]['rhod']+=dp
                     d = None
+
 
     ## sort the rhod in each band
     ## fit linear regression and get offset as estimated rhod
@@ -181,6 +219,7 @@ def worldview_ac(bundle, output=None, limit=None,
     print('{} - Fitted model {}, band pair {}, taua 550: {:.3f}'.format(datetime.datetime.now().isoformat()[0:19],
                                                                         mod, ':'.join(sel_model_band_pair), res['taua']), end='\n')
 
+    return(rhod, res)
     ## get A/C parameters per band
     pars = ['romix','dtott','utott','astot']
     rgi = res['rgi']
@@ -219,11 +258,16 @@ def worldview_ac(bundle, output=None, limit=None,
     new = False
     ## end write lat/lon
 
-    for tile in tiles:
+    for ti, tile in enumerate(tiles):
         for tile_mdata in metadata['TILE_INFO']:
             if tile in tile_mdata['FILENAME']:
                 file = '{}/{}'.format(bundle,tile_mdata['FILENAME'])
                 if not os.path.exists(file): continue
+
+                if swir_bundle is not None:
+                    swir_file = '{}/{}'.format(swir_bundle,swir_metadata['TILE_INFO'][ti])
+                    if not os.path.exists(swir_file):
+                        continue
 
                 ## get tile offset
                 offset = [int(tile_mdata['ULCOLOFFSET']), int(tile_mdata['ULROWOFFSET'])]
@@ -242,8 +286,12 @@ def worldview_ac(bundle, output=None, limit=None,
                     for key in ac_pars: ds_att[key]=ac_pars[key][band_names[b]]
                     if not os.path.exists(file): continue
 
-                    d=ac.worldview.get_rtoa(file, band_indices[b], band_tags[b], metadata,
-                                            sun_zenith=sza, se_distance=se_distance)
+                    if 'SWIR' not in band:
+                        d=ac.worldview.get_rtoa(file, band_indices[b], band_tags[b], metadata,
+                                                sun_zenith=sza, se_distance=se_distance)
+                    else:
+                        d=ac.worldview.get_rtoa(swir_file, band_indices[b], band_tags[b], swir_metadata,
+                                                sun_zenith=sza, se_distance=se_distance)
 
                     ac.output.nc_write(ofile, 'rhot_{}'.format(wave), d, dataset_attributes=ds_att,
                                            offset=offset, global_dims=global_dims, new=new)

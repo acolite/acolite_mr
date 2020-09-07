@@ -15,6 +15,7 @@ from .rmsd import rmsd
 from .rsr_read import rsr_read
 from .rsr_convolute import rsr_convolute
 from .rsr_convolute_dict import rsr_convolute_dict
+from .rsr_convolute_nd import rsr_convolute_nd
 
 from .rtoa_to_rhos import rtoa_to_rhos
 
