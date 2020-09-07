@@ -73,14 +73,22 @@ def worldview_ac(bundle,
     #band_names = [b for ib, b in enumerate(rsr_bands) if b != 'PAN']
     #band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if b != 'PAN']
 
-
     band_tags = list(metadata['BAND_INFO'].keys())
-    if swir_bundle is None:
-        band_names = [b for ib, b in enumerate(rsr_bands) if (b != 'PAN') & ('SWIR' not in b)]
-        band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if (b != 'PAN') & ('SWIR' not in b)]
-    else:
-        band_names = [b for ib, b in enumerate(rsr_bands) if (b != 'PAN')]
-        band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if (b != 'PAN')]
+    band_names = [metadata['BAND_INFO'][b]['name'] for b in band_tags]
+    band_indices = [metadata['BAND_INFO'][b]['index'] for b in band_tags]
+
+    #band_tags = list(metadata['BAND_INFO'].keys())
+    #if swir_bundle is None:
+    #    band_names = [b for ib, b in enumerate(rsr_bands) if (b != 'PAN') & ('SWIR' not in b)]
+    #    band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if (b != 'PAN') & ('SWIR' not in b)]
+    #else:
+    #    band_names = [b for ib, b in enumerate(rsr_bands) if (b != 'PAN')]
+    #    band_indices = [ib+1 for ib, b in enumerate(rsr_bands) if (b != 'PAN')]
+
+    if swir_bundle is not None:
+        band_tags += list(swir_metadata['BAND_INFO'].keys())
+        band_names +=  [swir_metadata['BAND_INFO'][b]['name'] for b in list(swir_metadata['BAND_INFO'].keys())]
+        band_indices += [swir_metadata['BAND_INFO'][b]['index'] for b in list(swir_metadata['BAND_INFO'].keys())]
 
     print(band_names)
     print(band_indices)
@@ -150,6 +158,7 @@ def worldview_ac(bundle,
 
     ## get dimensions and dark spectrum from each tile
     tiles_dims = {}
+    tiles_dims_swir = {}
     rhod={}
     for ti, tile in enumerate(tiles):
         for tile_mdata in metadata['TILE_INFO']:
@@ -159,21 +168,26 @@ def worldview_ac(bundle,
                     tiles_dims[tile] = (0,0)
                     continue
 
-                ##
+                ## get tile from wv3 swir bundle if provided
                 if swir_bundle is not None:
-                    swir_file = '{}/{}'.format(swir_bundle,swir_metadata['TILE_INFO'][ti])
+                    for tile_mdata_swir in swir_metadata['TILE_INFO']:
+                        if tile in tile_mdata_swir['FILENAME']:
+                            swir_file = '{}/{}'.format(swir_bundle,tile_mdata_swir['FILENAME'])
                     if not os.path.exists(swir_file):
                         continue
+                ## end swir bundle
 
                 for b,band in enumerate(band_names):
                     if 'SWIR' not in band:
                         d=ac.worldview.get_rtoa(file, band_indices[b], band_tags[b], metadata,
                                                 sun_zenith=sza, se_distance=se_distance)
+                        if tile not in tiles_dims: tiles_dims[tile] = d.shape
                     else:
                         d=ac.worldview.get_rtoa(swir_file, band_indices[b], band_tags[b], swir_metadata,
                                                 sun_zenith=sza, se_distance=se_distance)
-                        print(band, d.shape)
-                    if tile not in tiles_dims: tiles_dims[tile] = d.shape
+                        if tile not in tiles_dims_swir: tiles_dims_swir[tile] = d.shape
+
+                    print(band, d.shape)
 
                     npix=1000
                     tmp = d.ravel()
@@ -264,14 +278,23 @@ def worldview_ac(bundle,
                 file = '{}/{}'.format(bundle,tile_mdata['FILENAME'])
                 if not os.path.exists(file): continue
 
+                ## get tile from wv3 swir bundle if provided
                 if swir_bundle is not None:
-                    swir_file = '{}/{}'.format(swir_bundle,swir_metadata['TILE_INFO'][ti])
+                    for tile_mdata_swir in swir_metadata['TILE_INFO']:
+                        if tile in tile_mdata_swir['FILENAME']:
+                            swir_file = '{}/{}'.format(swir_bundle,tile_mdata_swir['FILENAME'])
                     if not os.path.exists(swir_file):
                         continue
+                ## end swir bundle
 
                 ## get tile offset
                 offset = [int(tile_mdata['ULCOLOFFSET']), int(tile_mdata['ULROWOFFSET'])]
                 print('Processing tile', tile, offset)
+
+                ## function to nn resize an array to a given shape
+                def nn_resize(arr, size):
+                    return(np.asarray([[ arr[int(arr.shape[0] * r / size[0])][int(arr.shape[1] * c / size[1])]
+                             for c in range(size[1])] for r in range(size[0])]))
 
                 ## run through spectral bands
                 for b,band in enumerate(band_names):
@@ -292,6 +315,10 @@ def worldview_ac(bundle,
                     else:
                         d=ac.worldview.get_rtoa(swir_file, band_indices[b], band_tags[b], swir_metadata,
                                                 sun_zenith=sza, se_distance=se_distance)
+                        ### next line needs to be reprojection to VNIR data extent, not nn interpolation
+                        d = nn_resize(d, tiles_dims[tile])
+                    print(band, d.shape)
+
 
                     ac.output.nc_write(ofile, 'rhot_{}'.format(wave), d, dataset_attributes=ds_att,
                                            offset=offset, global_dims=global_dims, new=new)
