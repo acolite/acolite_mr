@@ -4,6 +4,7 @@
 ## modifications: QV 2020-03-16 converted to function, added ancillary data, sky correction
 ##                              added full tile geolocation
 ##                QV 2020-07-26 added WV3 and swir bundle
+##                QV 2020-09-08 added SWIR reprojection (for single tile images?)
 
 def worldview_ac(bundle,
                  swir_bundle=None,
@@ -233,7 +234,8 @@ def worldview_ac(bundle,
     print('{} - Fitted model {}, band pair {}, taua 550: {:.3f}'.format(datetime.datetime.now().isoformat()[0:19],
                                                                         mod, ':'.join(sel_model_band_pair), res['taua']), end='\n')
 
-    return(rhod, res)
+    #return(rhod, res)
+
     ## get A/C parameters per band
     pars = ['romix','dtott','utott','astot']
     rgi = res['rgi']
@@ -271,6 +273,31 @@ def worldview_ac(bundle,
     ac.output.nc_write(ofile, 'lon', zlon(x, y))
     new = False
     ## end write lat/lon
+
+    ## get SWIR lat/lon
+    if swir_bundle is not None:
+        swir_dims = [int(swir_metadata['NUMROWS']),int(swir_metadata['NUMCOLUMNS'])]
+        pcol = [0, swir_dims[1], swir_dims[1], 0]
+        prow = [0, 0, swir_dims[0], swir_dims[0]]
+        plon = []
+        plat = []
+        for bk in ['UL', 'UR', 'LR', 'LL']:
+                k = '{}{}'.format(bk, 'LON')
+                plon.append(swir_metadata['BAND_INFO']['BAND_S1'][k])
+                k = '{}{}'.format(bk, 'LAT')
+                plat.append(swir_metadata['BAND_INFO']['BAND_S1'][k])
+
+        ## set up interpolator
+        swir_zlon = interp2d(pcol, prow, plon, kind='linear')
+        swir_zlat = interp2d(pcol, prow, plat, kind='linear')
+        swir_x = np.arange(1, 1+swir_dims[1], 1)
+        swir_y = np.arange(1, 1+swir_dims[0], 1)
+        swir_lat = swir_zlat(swir_x,swir_y)
+        swir_lon = swir_zlon(swir_x,swir_y)
+        ## also read vnir lat lon for reprojection
+        vnir_lat = ac.shared.nc_data(ofile, 'lat')
+        vnir_lon = ac.shared.nc_data(ofile, 'lon')
+    ## end get SWIR lat/lon
 
     for ti, tile in enumerate(tiles):
         for tile_mdata in metadata['TILE_INFO']:
@@ -316,7 +343,9 @@ def worldview_ac(bundle,
                         d=ac.worldview.get_rtoa(swir_file, band_indices[b], band_tags[b], swir_metadata,
                                                 sun_zenith=sza, se_distance=se_distance)
                         ### next line needs to be reprojection to VNIR data extent, not nn interpolation
-                        d = nn_resize(d, tiles_dims[tile])
+                        #d = nn_resize(d, tiles_dims[tile])
+                        ## reproject SWIR data to VNIR data extent
+                        d = ac.shared.reproject2(d, swir_lon, swir_lat, vnir_lon, vnir_lat, fill=np.nan)
                     print(band, d.shape)
 
 
