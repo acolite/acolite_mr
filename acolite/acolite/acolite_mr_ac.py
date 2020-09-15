@@ -6,6 +6,7 @@
 ##                2020-02-25 (QV) added ignore_sr_image keyword
 ##                2020-03-16 (QV) added worldview
 ##                2020-05-19 (QV) added elevation/pressure option
+##                2020-09-15 (QV) added geotiff outputs for Planet data
 
 def acolite_mr_ac(bundle,
                   output=None, limit=None,
@@ -15,6 +16,7 @@ def acolite_mr_ac(bundle,
                   uwv=1.5,
                   ignore_sr_image = True,
                   map_rgb=True, map_rgb_rhos=True,
+                  export_geotiff=False,
                   pan_sharpen_rgb=False,
                   sky_correction=True,
                   dem_pressure=False, elevation=None, pressure=None,
@@ -88,6 +90,7 @@ def acolite_mr_ac(bundle,
                             uoz_default=uoz,
                             uwv_default=uwv, ignore_sr_image=ignore_sr_image,
                             map_rgb=map_rgb, map_rgb_rhos=map_rgb,
+                            export_geotiff=export_geotiff,
                             sky_correction=sky_correction)
         return()
 

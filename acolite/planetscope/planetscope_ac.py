@@ -15,6 +15,7 @@
 ##                2020-02-25 (QV) added ignore_sr_image keyword
 ##                2020-03-31 (QV) fixed issue with pressure = None
 ##                2020-09-15 (QV) nan masking of rhos data
+##                                added geotiff outputs
 
 def planetscope_ac(bundle, output, limit=None,
                    gas_transmittance = True,
@@ -34,6 +35,7 @@ def planetscope_ac(bundle, output, limit=None,
                    extra_ac_parameters=True,
                    ignore_sr_image = True,
                    extend_limit=False,
+                   export_geotiff=False,
                    keep_l1r_ncdf=False,
                    map_rgb = True,
                    map_rgb_rhos = True,
@@ -171,10 +173,9 @@ def planetscope_ac(bundle, output, limit=None,
                 print('Error computing subset.')
                 return(1)
             sub, p, (xrange,yrange,grid_region) = ret
-
+        else:
+            p, (xrange,yrange) = planetscope.geo.get_projection(metadata)
     sensor = metadata['LUT_SENSOR']
-
-    print(metadata)
 
     if sensor == 'PlanetScope_0d':
         print('Sensor {} not yet implemented'.format(sensor))
@@ -257,6 +258,17 @@ def planetscope_ac(bundle, output, limit=None,
         offset = None
         global_dims = None
 
+    ## set up extra attributes for conversion to GeoTIFF
+    gatts = {'xrange':xrange,'yrange':yrange,
+            'proj4_string' : p.srs, 'pixel_size':metadata['resolution']}
+    gatts['output_dir'] = output
+    gatts['output_base'] = output+'/'+obase
+    gatts['sensor'] = sensor
+
+    ## make attributes for output NetCDF file
+    attributes = metadata
+    for g in gatts: attributes[g] = gatts[g]
+
     ## read RTOA and get rdark
     rdark = {}
     rhod = {}
@@ -302,7 +314,7 @@ def planetscope_ac(bundle, output, limit=None,
     res = aco.ac.select_model2(rhod, sensor, pressure = pressure, lutd=lutd,
                                rhod_tgas_cutoff = 0.90, rhod_model_selection = 'min_tau')
 
-    attributes = metadata
+    #attributes = metadata
 
     ## a/c parameters
     if extra_ac_parameters:
@@ -490,6 +502,10 @@ def planetscope_ac(bundle, output, limit=None,
     if False:
         ## read data from NCDF file
         data_r = nc_data(nc_file_l2r, '{}_{}'.format('rhos',wave_red))
+
+    ## export datasets as GeoTIFF
+    if export_geotiff:
+        aco.output.nc_to_geotiff(nc_file_l2r)
 
     ## remove the extracted bundle
     if zipped:

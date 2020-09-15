@@ -3,6 +3,7 @@
 ## last modification QV 2019-09-16 added Planet data processing
 ##                   QV 2020-02-25 added ignore_sr_image keyword
 ##                   QV 2020-05-19 added pressure and elevation arguments
+##                   QV 2020-09-15 added export_geotiff argument, currently only for Planet data
 
 def run_acolite_mr():
     ## import sys to parse arguments
@@ -54,6 +55,8 @@ def run_acolite_mr():
     parser.add_argument('--elevation', help='Scene elevation in meter (default=None)', default=None)
     parser.add_argument('--pressure', help='Scene pressure in hPa (default=None)', default=None)
 
+    parser.add_argument('--export_geotiff', help='Export NetCDF data also as GeoTIFF - currently Planet only (default=False)', default=False)
+
     args, unknown = parser.parse_known_args()
 
     if args.input is None:
@@ -77,6 +80,7 @@ def run_acolite_mr():
 
     if type(args.output_rgb) == str: args.output_rgb = bool(distutils.util.strtobool(args.output_rgb))
     if type(args.pan_sharpen_rgb) == str: args.pan_sharpen_rgb = bool(distutils.util.strtobool(args.pan_sharpen_rgb))
+    if type(args.export_geotiff) == str: args.export_geotiff = bool(distutils.util.strtobool(args.export_geotiff))
 
     if args.fixed_aot is not None: args.fixed_aot = float(args.fixed_aot)
     args.uoz_default = float(args.uoz_default)
@@ -99,6 +103,7 @@ def run_acolite_mr():
                             uoz=args.uoz_default,
                             uwv=args.uwv_default,
                             map_rgb=args.output_rgb, map_rgb_rhos=args.output_rgb,
+                            export_geotiff=args.export_geotiff,
                             pan_sharpen_rgb=args.pan_sharpen_rgb,
                             sky_correction=args.sky_correction,
                             dem_pressure=args.dem_pressure,
