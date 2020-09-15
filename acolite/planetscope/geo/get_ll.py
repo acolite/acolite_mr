@@ -2,8 +2,8 @@
 ## gets lon and lat for given PlanetScope metadata with optional limit
 ## written by Quinten Vanhellemont, RBINS
 ## 2018-03-13
-## modifications:
-##                
+## modifications: 2020-09-15 (QV) full tile y coordinates do not need to be flipped
+##
 
 def get_ll(metadata, limit=None, xy=False, extend_limit=False):
     from numpy import linspace, tile, flipud
@@ -22,13 +22,16 @@ def get_ll(metadata, limit=None, xy=False, extend_limit=False):
     else:
         p, (xrange,yrange) = get_projection(metadata)
         dims = metadata["dims"]
-        
+
     xdim =  linspace(xrange[0],xrange[1],dims[0]).reshape(1,dims[0])
     ydim =  linspace(yrange[0],yrange[1],dims[1]).reshape(dims[1],1)
 
     xdim = tile(xdim, (dims[1],1))
-    ydim = flipud(tile(ydim, (1,dims[0])))
-    
+    if limit is not None:
+        ydim = flipud(tile(ydim, (1,dims[0])))
+    else:
+        ydim = tile(ydim, (1,dims[0]))
+
     lon,lat = p(xdim,ydim,inverse=True)
 
     if xy:
@@ -37,4 +40,3 @@ def get_ll(metadata, limit=None, xy=False, extend_limit=False):
         xdim = None
         ydim = None
         return(lon,lat)
-
