@@ -14,6 +14,7 @@
 ##                2020-01-29 (QV) added extra_ac_parameters output
 ##                2020-02-25 (QV) added ignore_sr_image keyword
 ##                2020-03-31 (QV) fixed issue with pressure = None
+##                2020-09-15 (QV) nan masking of rhos data
 
 def planetscope_ac(bundle, output, limit=None,
                    gas_transmittance = True,
@@ -43,6 +44,7 @@ def planetscope_ac(bundle, output, limit=None,
 
     import os
     from numpy import nanmax,nanmin,nanpercentile
+    import numpy as np
 
     import dateutil
     from osgeo import gdal,osr
@@ -293,7 +295,7 @@ def planetscope_ac(bundle, output, limit=None,
         rhod[band] = {'rhod':rdark[band], 'wave':ds_att['wave']*1000., 'tt_gas':tt_gas[band],
                            'raa': metadata['AZI'],'vza': metadata['THV'], 'sza': metadata['THS']}
         band_data = None
-    print(rhod)	
+    print(rhod)
 
     ## select model
     lutd = aco.aerlut.import_luts(base_luts=luts)
@@ -303,7 +305,7 @@ def planetscope_ac(bundle, output, limit=None,
     attributes = metadata
 
     ## a/c parameters
-    if extra_ac_parameters: 
+    if extra_ac_parameters:
         pars = res['lut_meta']['par']
     else:
         pars = ['romix','dtott','utott','astot', 'rorayl']
@@ -416,7 +418,9 @@ def planetscope_ac(bundle, output, limit=None,
         for k in band_pars[band]: ds_att[k] = band_pars[band][k]
 
         ## compute rhos
+        mask = np.isnan(band_data)
         band_data = rtoa_to_rhos(band_data, ds_att['romix'], ds_att['utott'], ds_att['dtott'], ds_att['astot'], tt_gas = 1.)
+        band_data[mask] = np.nan
         nc_write(nc_file_l2r, parname_s, band_data,
                             dataset_attributes=ds_att,
                             new=nc_l2r_new, attributes=attributes, nc_compression=nc_compression)
@@ -447,15 +451,15 @@ def planetscope_ac(bundle, output, limit=None,
             data_b = nc_data(nc_file_l2r, '{}_{}'.format(par,wave_blue))
 
             rgb_file = '{}/{}_{}.{}'.format(rgb_dir,obase,'RGB_{}'.format(par.upper()),'png')
-            rgb_image = write_rgb(rgb_file, data_r, data_g, data_b, 
+            rgb_image = write_rgb(rgb_file, data_r, data_g, data_b,
                                     rgb_autorange=rgb_autorange, rgb_percentiles=rgb_percentiles,
                                     rgb_range_min=rgb_range_min,rgb_range_max=rgb_range_max, return_image=True)
             rgb_image = None
             data_r = None
             data_g = None
             data_b = None
-                        
-                        
+
+
     ## get PlanetScope surface reflectance
     if (sr_image_file is not None) & (not ignore_sr_image):
         nc_file_sr = '{}/{}_SR.nc'.format(output, obase)
@@ -470,19 +474,19 @@ def planetscope_ac(bundle, output, limit=None,
 
             band_data = planetscope.get_rsur(sr_image_file, bi+1, sub=sub)
 
-            nc_write(nc_file_sr, parname_sr, band_data, 
-                                  dataset_attributes=ds_att, 
+            nc_write(nc_file_sr, parname_sr, band_data,
+                                  dataset_attributes=ds_att,
                                   new=nc_sr_new, attributes=metadata, global_dims=global_dims, offset=offset, nc_compression=nc_compression)
             nc_sr_new=False
 
             ## find out overlap with L1 product to save in the same file
             if True:
                 data_rhos = nc_data(nc_file_l2r, parname_s)
-                nc_write(nc_file_sr, parname_s, data_rhos, 
-                                       dataset_attributes=ds_att, 
+                nc_write(nc_file_sr, parname_s, data_rhos,
+                                       dataset_attributes=ds_att,
                                        new=nc_sr_new, attributes=metadata, nc_compression=nc_compression)
                 nc_sr_new=False
-                
+
     if False:
         ## read data from NCDF file
         data_r = nc_data(nc_file_l2r, '{}_{}'.format('rhos',wave_red))
