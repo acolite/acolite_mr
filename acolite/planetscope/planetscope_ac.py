@@ -16,6 +16,7 @@
 ##                2020-03-31 (QV) fixed issue with pressure = None
 ##                2020-09-15 (QV) nan masking of rhos data
 ##                                added geotiff outputs
+##                2020-10-13 (QV) flattened the zip extraction (e.g. new api clipped data is in files/ subdirectory)
 
 def planetscope_ac(bundle, output, limit=None,
                    gas_transmittance = True,
@@ -85,7 +86,10 @@ def planetscope_ac(bundle, output, limit=None,
              bundle_orig = '{}'.format(bundle)
              bundle,ext = os.path.splitext(bundle_orig)
              zip_ref = zipfile.ZipFile(bundle_orig, 'r')
-             zip_ref.extractall(bundle)
+             #zip_ref.extractall(bundle)
+             for z in zip_ref.infolist():
+                 z.filename = os.path.basename(z.filename)
+                 zip_ref.extract(z, bundle)
              zip_ref.close()
 
         files = planetscope.bundle_test(bundle)
