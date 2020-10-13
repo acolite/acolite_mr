@@ -7,6 +7,8 @@
 ##                2018-05-08 (QV) changed Rapideye output name
 ##                2019-09-25 (QV) added sr if exists in separate file and include_planet_sr keyword
 ##                2019-10-01 (QV) skipping files with different UTM zone
+##                2020-10-13 (QV) flattened the zip extraction (e.g. new api clipped data is in files/ subdirectory)
+##                                added attributes for GeoTIFF output
 
 def planetscope_merge_toa(files, output, limit=None, subname = 'merged', nc_compression=True, include_planet_sr=False):
     import os
@@ -110,6 +112,12 @@ def planetscope_merge_toa(files, output, limit=None, subname = 'merged', nc_comp
                 global_dims = (grid_region['dims'][1],grid_region['dims'][0])
                 metadata['limit'] = limit
                 metadata['obase'] = obase
+
+                ## updated metadata for conversion back into GeoTIFF
+                metadata['xrange']=xrange
+                metadata['yrange']=yrange
+                metadata['proj4_string']=p.srs
+                metadata['pixel_size']=metadata['resolution']
 
                 lon, lat = planetscope.get_ll(metadata,limit=limit,extend_limit=extend_limit)
                 nc_write(nc_file_l1r, 'lon', lon, new=nc_l1r_new, attributes=metadata, nc_compression=nc_compression)
