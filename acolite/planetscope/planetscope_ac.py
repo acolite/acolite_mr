@@ -73,7 +73,8 @@ def planetscope_ac(bundle, output, limit=None,
             metadata['TIME'] = dateutil.parser.parse(metadata["isotime"])
             for mk in metadata:
                 if ('BAND' in mk):
-                    metadata[mk]=metadata[mk].split(',')
+                    if type(metadata[mk]) == str:
+                        metadata[mk]=metadata[mk].split(',')
             data_type = "NetCDF"
 
             xrange = metadata['xrange']
