@@ -17,6 +17,7 @@
 ##                2020-09-15 (QV) nan masking of rhos data
 ##                                added geotiff outputs
 ##                2020-10-13 (QV) flattened the zip extraction (e.g. new api clipped data is in files/ subdirectory)
+##                                updated attributes when processing merged NetCDF
 
 def planetscope_ac(bundle, output, limit=None,
                    gas_transmittance = True,
@@ -74,6 +75,10 @@ def planetscope_ac(bundle, output, limit=None,
                 if ('BAND' in mk):
                     metadata[mk]=metadata[mk].split(',')
             data_type = "NetCDF"
+
+            xrange = metadata['xrange']
+            yrange = metadata['yrange']
+            proj4_string = metadata['proj4_string']
         except:
             data_type = None
 
@@ -177,8 +182,10 @@ def planetscope_ac(bundle, output, limit=None,
                 print('Error computing subset.')
                 return(1)
             sub, p, (xrange,yrange,grid_region) = ret
+            proj4_string = p.srs
         else:
             p, (xrange,yrange) = planetscope.geo.get_projection(metadata)
+            proj4_string = p.srs
     sensor = metadata['LUT_SENSOR']
 
     if sensor == 'PlanetScope_0d':
@@ -264,7 +271,7 @@ def planetscope_ac(bundle, output, limit=None,
 
     ## set up extra attributes for conversion to GeoTIFF
     gatts = {'xrange':xrange,'yrange':yrange,
-            'proj4_string' : p.srs, 'pixel_size':metadata['resolution']}
+            'proj4_string' : proj4_string, 'pixel_size':metadata['resolution']}
     gatts['output_dir'] = output
     gatts['output_base'] = output+'/'+obase
     gatts['sensor'] = sensor
