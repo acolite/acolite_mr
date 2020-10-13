@@ -12,8 +12,8 @@
 
 def planetscope_merge_toa(files, output, limit=None, subname = 'merged', nc_compression=True, include_planet_sr=False):
     import os
-    from ponder_processor import planetscope
-    from ponder_processor.output import nc_write
+    from acolite import planetscope
+    from acolite.output import nc_write
 
     nc_l1r_new,nc_file_l1r = True, ''
     extend_limit = True
