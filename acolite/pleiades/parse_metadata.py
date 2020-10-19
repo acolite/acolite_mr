@@ -10,6 +10,7 @@
 ##                2017-11-13 (QV) added computation of correct viewing azimuth angle
 ##                2017-11-21 (QV) added defaults for model selection and scene center geometry
 ##                QV 2019-02-25 changed import name
+##                2020-10-18 (QV) added tile info
 
 def parse_metadata(metafile, pan=False):
     import os, sys, fnmatch, dateutil.parser
@@ -22,17 +23,17 @@ def parse_metadata(metafile, pan=False):
         print('Metadata file {} not found.'.format(metafile))
         sys.exit()
 
-    try: 
+    try:
         xmldoc = minidom.parse(metafile)
-    except: 
+    except:
         print('Error opening metadata file.')
         sys.exit()
-    
+
     metadata = {}
     metadata['SATELLITE']='Pléiades'
 
     ## get image information
-    metadata_tags = ['NROWS','NCOLS','NBANDS', 'RESAMPLING_SPACING', 'MISSION','MISSION_INDEX', 
+    metadata_tags = ['NROWS','NCOLS','NBANDS', 'RESAMPLING_SPACING', 'MISSION','MISSION_INDEX',
                      'INSTRUMENT','INSTRUMENT_INDEX','IMAGING_DATE', 'IMAGING_TIME', 'BAND_MODE',
                      'RED_CHANNEL', 'GREEN_CHANNEL', 'BLUE_CHANNEL', 'ALPHA_CHANNEL', 'EXTENT_TYPE']
     for tag in metadata_tags:
@@ -60,9 +61,9 @@ def parse_metadata(metafile, pan=False):
         name = (t.getElementsByTagName("SPECIAL_VALUE_TEXT")[0].firstChild.nodeValue)
         value = (t.getElementsByTagName("SPECIAL_VALUE_COUNT")[0].firstChild.nodeValue)
         metadata[name] = value
-    
+
     ## get view and sun geometry
-    geometric_tags = ['LOCATION_TYPE','TIME', 'SUN_AZIMUTH','SUN_ELEVATION', 
+    geometric_tags = ['LOCATION_TYPE','TIME', 'SUN_AZIMUTH','SUN_ELEVATION',
                       'AZIMUTH_ANGLE','VIEWING_ANGLE_ACROSS_TRACK','VIEWING_ANGLE_ALONG_TRACK','VIEWING_ANGLE',
                       'INCIDENCE_ANGLE_ALONG_TRACK','INCIDENCE_ANGLE_ACROSS_TRACK','INCIDENCE_ANGLE']
     geometric_values = []
@@ -73,13 +74,13 @@ def parse_metadata(metafile, pan=False):
             if len(node) > 0:
                 if tag in ['LOCATION_TYPE','TIME']: geom[tag]=node[0].firstChild.nodeValue
                 else: geom[tag]=float(node[0].firstChild.nodeValue)
-        
+
         ## compute viewing azimuth
         orientation_angle = geom['AZIMUTH_ANGLE']
         #incidence_across = geom['INCIDENCE_ANGLE_ACROSS_TRACK']
         #incidence_along = geom['INCIDENCE_ANGLE_ALONG_TRACK']
         #geom['VIEWING_AZIMUTH'] = mod(orientation_angle - arctan2(tan(incidence_across*dtor), tan(incidence_along*dtor))/dtor,360)
-        
+
         #ang_across = geom['VIEWING_ANGLE_ACROSS_TRACK']
         #ang_along = geom['VIEWING_ANGLE_ALONG_TRACK']
 
@@ -97,7 +98,7 @@ def parse_metadata(metafile, pan=False):
     band_info = {}
     bands = ['B0','B1','B2','B3']
     default_F0 = [1915., 1830., 1594.,1060.]
-    
+
     if pan is True:
          bands = ['P']
          default_F0 = [1548.]
@@ -107,10 +108,10 @@ def parse_metadata(metafile, pan=False):
         for t in xmldoc.getElementsByTagName('BAND_ID') :
             if (t.firstChild.nodeValue) == band:
                 parent = t.parentNode.nodeName
-                if parent == 'Band_Solar_Irradiance': 
+                if parent == 'Band_Solar_Irradiance':
                     unit = t.parentNode.getElementsByTagName('MEASURE_UNIT')[0].firstChild.nodeValue
                     F0 = float(t.parentNode.getElementsByTagName('VALUE')[0].firstChild.nodeValue)
-                    if F0 == 999.: 
+                    if F0 == 999.:
                          idx = [i for i,j in enumerate(bands) if j == band]
                          F0 = default_F0[idx[0]]
                     band_data['F0'] = F0
@@ -176,21 +177,35 @@ def parse_metadata(metafile, pan=False):
         col = float(v['COL'])
         row = float(v['ROW'])
 
-        if (col == 1) & (row == 1): 
+        if (col == 1) & (row == 1):
             vertices['UL'] = v
             continue
-        if (col == ncols) & (row == 1): 
+        if (col == ncols) & (row == 1):
             vertices['UR'] = v
             continue
-        if (col == ncols) & (row == nrows): 
+        if (col == ncols) & (row == nrows):
             vertices['LR'] = v
             continue
-        if (col == 1) & (row == nrows): 
+        if (col == 1) & (row == nrows):
             vertices['LL'] = v
             continue
         vertices['V{}'.format(i)]=v
 
     metadata['VERTICES']=vertices
+
+    ## get tile information
+    try:
+        metadata['ntiles'] = int(xmldoc.getElementsByTagName("NTILES")[0].firstChild.nodeValue)
+        metadata['ntiles_R'] = int(xmldoc.getElementsByTagName("NTILES_COUNT")[0]._attrs['ntiles_R'].nodeValue)
+        metadata['ntiles_C'] = int(xmldoc.getElementsByTagName("NTILES_COUNT")[0]._attrs['ntiles_C'].nodeValue)
+        metadata['tiles_nrows'] = int(xmldoc.getElementsByTagName("NTILES_SIZE")[0]._attrs['nrows'].nodeValue)
+        metadata['tiles_ncols'] = int(xmldoc.getElementsByTagName("NTILES_SIZE")[0]._attrs['ncols'].nodeValue)
+    except:
+        metadata['ntiles'] = 1
+        metadata['ntiles_R'] = 1
+        metadata['ntiles_C'] = 1
+        metadata['tiles_nrows'] = int(metadata['NROWS'])
+        metadata['tiles_ncols'] = int(metadata['NROWS'])
 
     ## set some defaults
     metadata['THS'] = 90. - metadata['GEOMETRY'][1]['SUN_ELEVATION']
@@ -203,7 +218,7 @@ def parse_metadata(metafile, pan=False):
     bands = sorted({band for band in metadata['BAND_INFO']})
     wavelengths = sorted({metadata['BAND_INFO'][band]['wave'] for band in metadata['BAND_INFO']})
     band_wavelengths = sorted({metadata['BAND_INFO'][band]['wave_name'] for band in metadata['BAND_INFO']})
-    
+
     #band_indices = [metadata['BAND_INFO'][band]['band_index'] for band in bands]
     band_indices = []
     for bi, band in enumerate(bands):
@@ -224,7 +239,7 @@ def parse_metadata(metafile, pan=False):
         if band == 'B2': band_names.append('Red')
         if band == 'B3': band_names.append('NIR')
 
-    metadata['BAND_NAMES'] = band_names 
+    metadata['BAND_NAMES'] = band_names
     metadata['BANDS_ALL'] = ['Blue','Green','Red','NIR']
     metadata['BANDS_REDNIR'] = ['Red','NIR']
     metadata['BANDS_VIS'] = ['Blue','Green','Red']
