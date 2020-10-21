@@ -232,10 +232,16 @@ def pleiades_ac(file, output=None, sub=None, limit=None, region=None,
     mask = data[band_names[0]] == np.nan
 
     ## get dark spectrum
-    if dark_spectrum_full_scene is False:
-        rtoa_dict, perc_all = ac.ac.get_dark_spectrum(data, option=dark_spectrum_option,
+    #if dark_spectrum_full_scene is False:
+    #    rtoa_dict, perc_all = ac.ac.get_dark_spectrum(data, option=dark_spectrum_option,
+    #                                                      percentiles=percentiles, perc_idx=perc_idx,
+    #                                                      pixel_idx=pixel_idx,pixel_range_min=pixel_range_min,pixel_range_max=pixel_range_max)
+
+    rtoa_dict, perc_all = ac.ac.get_dark_spectrum(data, option=dark_spectrum_option,
                                                           percentiles=percentiles, perc_idx=perc_idx,
                                                           pixel_idx=pixel_idx,pixel_range_min=pixel_range_min,pixel_range_max=pixel_range_max)
+
+
     ### TOA gas correction
     if gas_transmittance:
         rtoa_dict = {band:rtoa_dict[band]/tt_gas[band] for band in rtoa_dict}
