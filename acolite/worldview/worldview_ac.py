@@ -107,6 +107,13 @@ def worldview_ac(bundle,
     while raa >= 180.: raa -= 180.
     sza = 90. - float(metadata['MEANSUNEL'])
     vza = 90. - float(metadata['MEANSATEL'])
+
+    ## LUT limits, LUT will otherwise give NaN values for higher zenith angles
+    ## VZA will be updated in a new version of the LUT (running simulations in 202010)
+    if True:
+        sza = np.min((sza, 80))
+        vza = np.min((vza, 56))
+
     metadata['se_distance'] = ac.shared.distance_se(metadata['DOY'])
     se_distance = metadata['se_distance']
 
@@ -233,6 +240,8 @@ def worldview_ac(bundle,
         rhod[band_names[b]]['rhod'] = by
 
     ## fit model
+    if pressure is None:
+        pressure = 1013.25
     res = ac.ac.select_model2(rhod, sensor, pressure=pressure, rhod_tgas_cutoff=0.9, lutd=lutd)
     sel_model = res['lutid']
     sel_model_band_pair = [band_names[s] for s in (res['sel_idx'],res['sel_idx2'])]
@@ -240,7 +249,23 @@ def worldview_ac(bundle,
     print('{} - Fitted model {}, band pair {}, taua 550: {:.3f}'.format(datetime.datetime.now().isoformat()[0:19],
                                                                         mod, ':'.join(sel_model_band_pair), res['taua']), end='\n')
 
-    #return(rhod, res)
+    ## using new sky reflectance correction
+    if False:
+        res2 = ac.ac.rhod_fit_model(raa, vza, sza, pressure = pressure,
+                        rhod = {b:rhod[b]['rhod_tmp'][0] for b in rhod}, sensor=sensor, resample=True,luts=luts)
+
+        sel_mod = res2['mod_sel']
+        tau550 = res2[sel_mod]['tau_fit']
+        if np.isnan(tau550): tau550 = 5
+
+        mod = {'1':'C', '2':'M', '3':'U'}[sel_mod[-1]]
+
+        rsky_new = {b: res2[sel_mod]['rhot_fit_rs'][b]-res2[sel_mod]['romix_fit_rs'][b] for b in res2[sel_mod]['rhot_fit_rs']}
+        print('model:{} band:{} aot={:.3f}'.format(sel_mod,res2[sel_mod]['tau_band'],res2[sel_mod]['tau_fit']))
+
+    ## for debugging
+    if False:
+        return(rhod, res)
 
     ## get A/C parameters per band
     pars = ['romix','dtott','utott','astot']
