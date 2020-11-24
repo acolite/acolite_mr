@@ -5,6 +5,7 @@
 ## modifications: QV 2019-05-06
 ##                2020-03-16 (QV) fixed tile metadata reads
 ##                2020-07-26 (QV) added WV3
+##                2020-11-24 (QV) added fix for WorldView2 "L1B" data
 
 def parse_metadata(metafile):
     from acolite.shared import rsr_read, f0_band, rsr_convolute
@@ -60,7 +61,12 @@ def parse_metadata(metafile):
         if metadata['SATID'] == 'WV02':
             metadata['SATELLITE'] = 'WorldView2'
             metadata['SENSOR'] = 'WorldView2'
-            metadata["TIME"]=dateutil.parser.parse(metadata["EARLIESTACQTIME"])
+            try:
+                ## "L2A" data
+                metadata["TIME"]=dateutil.parser.parse(metadata["EARLIESTACQTIME"])
+            except:
+                ## "L1B" data
+                metadata["TIME"]=dateutil.parser.parse(metadata["FIRSTLINETIME"])
             band_names=['COASTAL','BLUE','GREEN','YELLOW','RED','REDEDGE','NIR1','NIR2']
             band_indices=[1,2,3,4,5,6,7,8]
             band_tag_names = ["BAND_C","BAND_B","BAND_G","BAND_Y","BAND_R","BAND_RE","BAND_N", "BAND_N2"]
