@@ -12,7 +12,8 @@ def worldview_ac(bundle,
                  swir_bundle=None,
                  output=None, limit=None,
                             ancillary_data=False,
-                            luts=['ACOLITE-LUT-202010-MOD1', 'ACOLITE-LUT-202010-MOD2'],
+                            #luts=['ACOLITE-LUT-202010-MOD1', 'ACOLITE-LUT-202010-MOD2'],
+                            luts=['PONDER-LUT-201704-MOD1', 'PONDER-LUT-201704-MOD2'],
                             uoz_default=0.3, uwv_default=1.5, pressure = None,
                             map_rgb=True, map_rgb_rhos=True,
                             gas_transmittance = True, sky_correction=True):
@@ -111,9 +112,9 @@ def worldview_ac(bundle,
 
     ## LUT limits, LUT will otherwise give NaN values for higher zenith angles
     ## VZA will be updated in a new version of the LUT (running simulations in 202010)
-    #if True:
-    #    sza = np.min((sza, 80))
-    #    vza = np.min((vza, 56))
+    if True:
+        sza = np.min((sza, 80))
+        vza = np.min((vza, 56))
 
     metadata['se_distance'] = ac.shared.distance_se(metadata['DOY'])
     se_distance = metadata['se_distance']
@@ -341,7 +342,7 @@ def worldview_ac(bundle,
         for tile_mdata in metadata['TILE_INFO']:
             if tile in tile_mdata['FILENAME']:
                 file = '{}/{}'.format(bundle,tile_mdata['FILENAME'])
-                
+
                 ## check if the files were named .TIF instead of .TIFF
                 if not os.path.exists(file):
                     file = file.replace('.TIFF', '.TIF')
