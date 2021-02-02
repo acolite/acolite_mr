@@ -224,6 +224,7 @@ def planetscope_ac(bundle, output, limit=None,
 
     if pressure is None:
         pressure = 1013.25
+    pressure = float(pressure)
 
     ## get gas transmittances
     if gas_transmittance:
