@@ -1,6 +1,8 @@
 ## About ACOLITE_MR
 ACOLITE_MR contains the Dark Spectrum Fitting (DSF) atmospheric correction algorithms for aquatic applications of metre scale satellites developed at RBINS. ACOLITE_MR can currently process Pléiades-1 A/B, SPOT 6/7, RapidEye, PlanetScope, and WorldView-2 imagery.
 
+**This repository is no longer under active maintenance, and all future development will go into the generic version: https://github.com/acolite/acolite**
+
 The algorithm was presented in Vanhellemont and Ruddick 2018, [Atmospheric correction of metre-scale optical satellite data for inland and coastal water applications](https://www.sciencedirect.com/science/article/pii/S0034425718303481) and Vanhellemont 2019, [Daily metre-scale mapping of water turbidity using CubeSat imagery](https://doi.org/10.1364/OE.27.0A1372).
 
 ACOLITE_MR development was funded by the Belgian Science Policy Office STEREO program under contract SR/00/325 (PONDER project).
